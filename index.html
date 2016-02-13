@@ -1,41 +1,31 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-    </head>
     <body>
-        <div id="messages"></div>
-        <br>
-        <a id="linkStart" href="javascript:StartTask()">Start Task</a>
-        <a id="linkStop" style="display: none;" href="javascript:StopTask()">Stop Task</a>
+        <div id="messages" style="height: 50px;"></div>
+        <a id="linkStart" href="javascript:StartTask()">Start Task</a> | <a id="linkStop" href="javascript:StopTask()">Stop Task</a>
         
-        <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
         <script type="text/javascript">
             var messageContainer = document.getElementById("messages");
             var linkStop = document.getElementById("linkStop");
 
             var ws;
-            var timer;
             var uuid;
 
             function StartTask() {
                 if ("WebSocket" in window) {
-                    ws = new WebSocket("ws://localhost:8888/task/start/");
-                    ws.onopen = function() {
-                        linkStart.style.display = 'none';
-                        linkStop.style.display = 'block';
-                    };
+                    ws = new WebSocket("ws://localhost:8888/task-start/");
+
                     ws.onmessage = function (evt) {
                         var data_received = JSON.parse(evt.data);
-                        uuid = data_received.uuid;
-                        messageContainer.innerHTML = "Task: " + uuid + " | " + data_received.status
-                        if(data_received.status == "CANCELED"){
-                            uuid = null;
-                            ws.close();
+                        if(data_received.uuid != undefined){
+                            uuid = data_received.uuid;
                         }
-                    };
-                    ws.onclose = function() {
-
+                        messageContainer.innerHTML = "Task: " + uuid + " | " + data_received.status
+                        if(data_received.status == "CANCELED" || data_received.status == "FINISHED"){
+                            ws.close();
+                            uuid = null;
+                            ws = null;
+                        }
                     };
                 } else {
                     messageContainer.innerHTML = "WebSocket NOT supported by your Browser!";
@@ -43,9 +33,10 @@
             }
 
             function StopTask() {
-                ws.send(JSON.stringify({'uuid': uuid, 'request': 'cancel'}));
-                linkStop.style.display = 'none';
-                linkStart.style.display = 'block';
+                if(ws != null){
+                    console.log('intenta pararla');
+                    ws.send(JSON.stringify({'uuid': uuid, 'request': 'cancel'}));
+                }
             }
         </script>
     </body>
